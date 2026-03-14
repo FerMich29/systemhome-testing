@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SYSTEMHOME - Business Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .nav-active { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; border-left: 4px solid #f59e0b; }
+        /* Configuración para ocultar elementos innecesarios al imprimir el ticket */
+        @media print { .no-print { display: none !important; } #ticket-imprimible { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-700">
+
+    <div id="login-screen" class="fixed inset-0 bg-slate-900 z-[300] flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-md rounded-[3rem] p-12 shadow-2xl">
+            <h1 class="text-4xl font-black italic text-amber-500 text-center mb-10 uppercase">System<span class="text-slate-900">Home</span></h1>
+            <div class="space-y-4">
+                <input type="text" id="l-u" placeholder="Usuario" class="w-full bg-slate-50 p-5 rounded-2xl outline-none border focus:border-amber-500 font-bold">
+                <input type="password" id="l-p" placeholder="Contraseña" class="w-full bg-slate-50 p-5 rounded-2xl outline-none border focus:border-amber-500 font-bold">
+                <button onclick="login()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg">Entrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app" class="hidden h-screen flex overflow-hidden">
+        <aside class="w-72 bg-slate-900 text-white flex flex-col no-print shrink-0">
+            <div class="p-8">
+                <h1 class="text-2xl font-black italic text-amber-400">SYSTEMHOME</h1>
+                <p id="u-badge" class="text-[10px] bg-white/10 px-3 py-1 rounded-full inline-block mt-3 font-bold uppercase"></p>
+            </div>
+            <nav class="flex-1 px-4 space-y-2">
+                <button onclick="setSec('venta')" id="n-v" class="w-full flex items-center p-4 rounded-2xl text-xs font-black uppercase nav-active">🛒 Vender</button>
+                <button onclick="setSec('hist')" id="n-h" class="w-full flex items-center p-4 rounded-2xl text-xs font-black uppercase text-slate-400 hover:bg-slate-800">📜 Historial</button>
+                <button onclick="setSec('fact')" id="n-f" class="w-full flex items-center p-4 rounded-2xl text-xs font-black uppercase text-slate-400 hover:bg-slate-800">📑 Facturas</button>
+            </nav>
+            <div class="p-6 border-t border-slate-800">
+                <button onclick="location.reload()" class="w-full text-xs font-black uppercase text-red-400">Salir</button>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col min-w-0">
+            <header class="h-20 bg-white border-b flex items-center justify-between px-10 no-print">
+                <input type="text" id="busq" onkeyup="renderGrid()" placeholder="Buscar artículos..." class="w-1/3 bg-slate-50 rounded-2xl px-6 py-3 text-sm outline-none border focus:border-amber-500">
+                <div class="text-xs font-black uppercase text-slate-400">Fernanda Aguayo</div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-10">
+                <div id="sec-v">
+                    <div class="grid grid-cols-3 gap-6 mb-10 no-print">
+                        <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100"><p class="text-[10px] font-black text-slate-400 uppercase mb-2">Hoy</p><h4 id="st-v" class="text-4xl font-black text-amber-600">$0.00</h4></div>
+                        <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100"><p class="text-[10px] font-black text-slate-400 uppercase mb-2">Productos</p><h4 id="st-p" class="text-4xl font-black">0</h4></div>
+                        <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-l-8 border-red-500"><p class="text-[10px] font-black text-red-400 uppercase mb-2">Stock Bajo</p><h4 id="st-a" class="text-4xl font-black text-red-500">0</h4></div>
+                    </div>
+                    <div id="cats" class="flex gap-2 mb-8 overflow-x-auto no-print pb-2"></div>
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-10">
+                        <div id="grid" class="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                        <div class="bg-white rounded-[3rem] p-8 shadow-xl h-fit sticky top-5 no-print border border-slate-50">
+                            <h3 class="font-black text-slate-400 uppercase text-xs mb-6">Carrito de compra</h3>
+                            <div id="cart" class="space-y-4 mb-8 max-h-[400px] overflow-y-auto"></div>
+                            <div class="border-t border-dashed pt-8">
+                                <div class="flex justify-between mb-8 items-end"><span class="font-black text-slate-300 text-xs">TOTAL</span><span id="t-cart" class="text-4xl font-black tracking-tighter">$0.00</span></div>
+                                <button onclick="abrirConfirmacion()" id="btn-pg" disabled class="w-full bg-slate-900 text-white py-6 rounded-[2rem] font-black uppercase text-xs shadow-xl transition-all">Cobrar ahora</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sec-h" class="hidden">
+                    <h2 class="text-3xl font-black italic mb-8 uppercase">Historial de Ventas</h2>
+                    <div class="bg-white rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden text-sm">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase border-b">
+                                <tr><th class="p-6">Folio</th><th class="p-6">Fecha</th><th class="p-6">Estado</th><th class="p-6 text-right">Monto</th></tr>
+                            </thead>
+                            <tbody id="t-hist" class="divide-y"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="sec-f" class="hidden">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 class="text-3xl font-black italic uppercase">Facturación</h2>
+                        <button onclick="exportarFacturas()" class="bg-green-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg">Exportar CSV</button>
+                    </div>
+                    <div class="bg-white rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden text-sm">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase border-b">
+                                <tr><th class="p-6">RFC</th><th class="p-6">Razón Social</th><th class="p-6">Venta</th><th class="p-6">Fecha</th><th class="p-6 text-right">Monto</th></tr>
+                            </thead>
+                            <tbody id="t-fact" class="divide-y"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="m-confirm" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-xl z-[200] flex items-center justify-center p-4">
+        <div class="bg-white p-10 rounded-[4rem] w-full max-w-2xl shadow-2xl">
+            <h2 class="text-3xl font-black mb-10 italic uppercase text-center">Finalizar Venta</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div class="bg-slate-50 rounded-[2.5rem] p-6 max-h-[300px] overflow-y-auto">
+                    <div id="conf-lista-prods" class="space-y-2 text-[11px] font-bold"></div>
+                </div>
+                <div class="flex flex-col justify-center text-center">
+                    <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Total</p>
+                    <div id="conf-t" class="text-5xl font-black mb-8 tracking-tighter">$0.00</div>
+                    <input type="number" id="efectivo" onkeyup="calcCambio()" placeholder="Efectivo" class="w-full text-center bg-slate-50 border-2 border-amber-500 p-6 rounded-3xl text-3xl font-black outline-none mb-6">
+                    <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Cambio</p>
+                    <div id="cambio" class="text-4xl font-black text-slate-300">$0.00</div>
+                </div>
+            </div>
+            <div class="flex gap-4 mt-12">
+                <button onclick="procesarVentaFinal()" class="flex-[2] bg-slate-900 text-white py-6 rounded-3xl font-black uppercase text-xs hover:bg-amber-500 shadow-xl">Confirmar Pago</button>
+                <button onclick="document.getElementById('m-confirm').classList.add('hidden')" class="flex-1 bg-slate-100 text-slate-400 py-6 rounded-3xl font-bold uppercase text-xs">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="m-t" class="hidden fixed inset-0 bg-slate-900/90 z-[220] flex items-center justify-center p-4">
+        <div class="bg-white p-10 rounded-[3rem] w-full max-w-xs shadow-2xl text-center">
+            <div id="ticket-imprimible" class="text-[11px] font-mono leading-relaxed text-left">
+                <div class="text-center border-b border-dashed pb-6 mb-6">
+                    <h2 class="text-2xl font-black italic uppercase">SystemHome</h2>
+                    <div id="tk-f" class="font-black mt-4"></div>
+                    <div id="tk-d" class="text-slate-500 uppercase text-[9px]"></div>
+                </div>
+                <div id="tk-i" class="space-y-2 mb-6"></div>
+                <div class="border-t border-dashed pt-6 flex justify-between text-base font-black italic"><span>TOTAL</span><span id="tk-t"></span></div>
+            </div>
+            <div class="mt-8 space-y-2 no-print">
+                <button onclick="window.print()" class="w-full bg-amber-500 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Imprimir Ticket</button>
+                <button onclick="document.getElementById('m-factura').classList.remove('hidden')" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Facturar Venta</button>
+                <div id="area-cancelar" class="hidden">
+                    <button onclick="cancelarV()" class="w-full bg-red-100 text-red-600 py-4 rounded-2xl font-black uppercase text-[9px]">Cancelar Venta (SP)</button>
+                </div>
+                <button onclick="document.getElementById('m-t').classList.add('hidden')" class="w-full bg-slate-100 py-3 rounded-2xl text-[10px] font-black text-slate-400 uppercase">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="m-factura" class="hidden fixed inset-0 bg-slate-900/80 z-[250] flex items-center justify-center p-4">
+        <div class="bg-white p-12 rounded-[4rem] w-full max-w-lg shadow-2xl">
+            <h2 class="text-3xl font-black mb-8 italic uppercase text-center">Datos Fiscales</h2>
+            <div class="space-y-4">
+                <input type="text" id="f-rfc" placeholder="RFC" class="w-full p-5 bg-slate-50 rounded-2xl font-bold uppercase border outline-none focus:border-blue-500">
+                <input type="text" id="f-rs" placeholder="Razón Social" class="w-full p-5 bg-slate-50 rounded-2xl font-bold uppercase border outline-none">
+                <select id="f-uso" class="w-full p-5 bg-slate-50 rounded-2xl font-bold border outline-none"><option value="G03">Gastos en general</option><option value="P01">Por definir</option></select>
+                <input type="email" id="f-email" placeholder="Email" class="w-full p-5 bg-slate-50 rounded-2xl font-bold border outline-none">
+            </div>
+            <div class="flex gap-4 mt-10">
+                <button onclick="guardarFactura()" class="flex-[2] bg-blue-600 text-white py-5 rounded-3xl font-black uppercase text-xs tracking-widest shadow-xl">Registrar</button>
+                <button onclick="document.getElementById('m-factura').classList.add('hidden')" class="flex-1 bg-slate-100 text-slate-400 py-5 rounded-3xl font-bold uppercase text-xs">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales para estado de sesión, catálogo y carrito
+        let user = null, prods = [], cats = [], cAct = "TODAS", cart = [], vAct = null;
+
+        // Función para validar usuario con la API
+        async function login() {
+            const res = await fetch('api.php', { method:'POST', body: JSON.stringify({accion:'login', user: document.getElementById('l-u').value, pass: document.getElementById('l-p').value})});
+            const d = await res.json();
+            if(d.status === 'ok') {
+                user = d.user; 
+                document.getElementById('login-screen').classList.add('hidden'); 
+                document.getElementById('app').classList.remove('hidden');
+                document.getElementById('u-badge').innerText = user.rol + ": " + user.usuario;
+                cargar();
+            } else alert("Error de acceso");
+        }
+
+        // Carga inicial de productos, categorías y métricas
+        async function cargar() {
+            const res = await fetch('api.php'); const d = await res.json();
+            prods = d.productos; cats = d.categorias; 
+            renderCats(); renderGrid(); refreshStats();
+        }
+
+        // Genera los botones de filtros por categoría
+        function renderCats() {
+            let h = `<button onclick="setCat('TODAS')" class="shrink-0 px-8 py-3 rounded-2xl text-[10px] font-black uppercase border transition-all ${cAct==='TODAS'?'bg-amber-500 text-white border-amber-500':'bg-white text-slate-400'}">Todas</button>`;
+            h += cats.map(c => `<button onclick="setCat('${c}')" class="shrink-0 px-8 py-3 rounded-2xl text-[10px] font-black uppercase border transition-all ${cAct===c?'bg-amber-500 text-white border-amber-500':'bg-white text-slate-400'}">${c}</button>`).join('');
+            document.getElementById('cats').innerHTML = h;
+        }
+
+        // Dibuja las tarjetas de productos aplicando filtros de búsqueda y categoría
+        function renderGrid() {
+            const t = document.getElementById('busq').value.toLowerCase();
+            const f = (cAct === "TODAS" ? prods : prods.filter(p => p.categoria === cAct)).filter(p => p.nombre.toLowerCase().includes(t));
+            document.getElementById('grid').innerHTML = f.map(p => `
+                <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm transition-all hover:shadow-xl">
+                    <span class="text-[9px] font-black text-amber-600 bg-amber-50 px-3 py-1 rounded-full uppercase">${p.categoria}</span>
+                    <h3 class="font-black text-xl uppercase mt-4 mb-2 truncate">${p.nombre}</h3>
+                    <div class="flex justify-between items-end mt-4">
+                        <span class="text-2xl font-black text-slate-900 tracking-tighter">$${parseFloat(p.precio_venta).toFixed(2)}</span>
+                        <span class="text-[10px] font-bold ${p.stock < 5 ? 'text-red-500' : 'text-slate-300'}">STOCK: ${p.stock}</span>
+                    </div>
+                    <button onclick="add(${p.id},'${p.nombre}',${p.precio_venta},${p.stock})" class="w-full bg-slate-900 text-white py-4 rounded-2xl text-[10px] font-black uppercase mt-6 hover:bg-amber-500">Añadir</button>
+                </div>`).join('');
+        }
+
+        // Añade productos al carrito con validación de stock disponible
+        function add(id,n,p,s) {
+            if(cart.filter(x => x.id === id).length >= s) return alert("Sin stock disponible");
+            cart.push({id, n, p}); 
+            renderCart();
+        }
+
+        // Actualiza la visualización del carrito y el total a pagar
+        function renderCart() {
+            let t = 0;
+            document.getElementById('cart').innerHTML = cart.map((i,idx) => { t += parseFloat(i.p); return `<div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl text-xs font-black"><span>${i.n}</span><div class="flex gap-4 items-center"><span>$${parseFloat(i.p).toFixed(2)}</span><button onclick="cart.splice(${idx},1);renderCart()" class="text-red-400">✕</button></div></div>`; }).join('');
+            document.getElementById('t-cart').innerText = "$" + t.toFixed(2);
+            document.getElementById('btn-pg').disabled = cart.length === 0;
+        }
+
+        // Prepara el modal de pago con los datos actuales del carrito
+        function abrirConfirmacion() {
+            document.getElementById('conf-t').innerText = document.getElementById('t-cart').innerText;
+            document.getElementById('conf-lista-prods').innerHTML = cart.map(i => `<div class="flex justify-between border-b pb-1"><span>${i.n}</span><span>$${parseFloat(i.p).toFixed(2)}</span></div>`).join('');
+            document.getElementById('efectivo').value = ""; 
+            document.getElementById('cambio').innerText = "$0.00";
+            document.getElementById('m-confirm').classList.remove('hidden');
+            setTimeout(() => document.getElementById('efectivo').focus(), 300);
+        }
+
+        // Calcula el cambio en tiempo real mientras se ingresa el efectivo
+        function calcCambio() {
+            const tot = parseFloat(document.getElementById('conf-t').innerText.replace('$','')), efec = parseFloat(document.getElementById('efectivo').value) || 0, res = efec - tot;
+            document.getElementById('cambio').innerText = "$" + (res > 0 ? res.toFixed(2) : "0.00");
+        }
+
+        // Envía la venta a la API para ser procesada en la base de datos
+        async function procesarVentaFinal() {
+            const totVal = parseFloat(document.getElementById('conf-t').innerText.replace('$','')), efecVal = parseFloat(document.getElementById('efectivo').value) || 0;
+            if(efecVal < totVal) return alert("Dinero insuficiente");
+            
+            const res = await fetch('api.php', { method:'POST', body: JSON.stringify({total: totVal.toFixed(2), productos: cart})});
+            const d = await res.json();
+            if(d.status === 'ok') {
+                document.getElementById('m-confirm').classList.add('hidden');
+                showTk(d.id_venta, d.fecha, totVal.toFixed(2), cart, 'PAGADA');
+                cart = []; renderCart(); cargar();
+            } else alert("Error: " + d.msg);
+        }
+
+        // Muestra el modal del ticket con los datos de la venta finalizada
+        function showTk(id, f, t, items, est) {
+            vAct = id;
+            document.getElementById('tk-f').innerText = "FOLIO: #" + String(id).padStart(6,'0');
+            document.getElementById('tk-d').innerText = f;
+            document.getElementById('tk-t').innerText = "$" + parseFloat(t).toFixed(2);
+            document.getElementById('tk-i').innerHTML = items.map(i => `<div class="flex justify-between"><span>1x ${i.n || i.nombre}</span><span class="font-bold">$${parseFloat(i.p || i.precio_unitario).toFixed(2)}</span></div>`).join('');
+            // Solo administradores pueden cancelar ventas no canceladas previamente
+            document.getElementById('area-cancelar').classList.toggle('hidden', user.rol !== 'admin' || est === 'CANCELADA');
+            document.getElementById('m-t').classList.remove('hidden');
+        }
+
+        // Obtiene el detalle de una venta antigua desde el historial
+        async function verDet(id, f, t, est) {
+            const res = await fetch('api.php?action=detalle_venta&id=' + id);
+            const p = await res.json(); showTk(id, f, t, p, est);
+        }
+
+        // Ejecuta la cancelación de venta llamando al Stored Procedure vía API
+        async function cancelarV() {
+            if(!confirm("¿Confirmar cancelación por Procedimiento Almacenado (SP)?")) return;
+            const res = await fetch('api.php', { method:'POST', body: JSON.stringify({accion:'cancelar_venta', id_venta: vAct})});
+            const r = await res.json();
+            if(r.status === 'ok') { 
+                alert("Éxito: " + r.info); 
+                document.getElementById('m-t').classList.add('hidden'); 
+                cargar(); setSec('hist'); 
+            } else alert("Error en SP: " + r.msg);
+        }
+
+        // Registra la factura asociada a una venta específica
+        async function guardarFactura() {
+            const d = { accion: 'generar_factura', id_venta: vAct, rfc: document.getElementById('f-rfc').value, razon_social: document.getElementById('f-rs').value, uso_cfdi: document.getElementById('f-uso').value, email: document.getElementById('f-email').value };
+            if(!d.rfc || !d.razon_social) return alert("Faltan datos fiscales");
+            const res = await fetch('api.php', { method:'POST', body: JSON.stringify(d)});
+            if((await res.json()).status === 'ok') { 
+                alert("Factura registrada correctamente"); 
+                document.getElementById('m-factura').classList.add('hidden'); 
+            }
+        }
+
+        // Gestiona el cambio de pestañas/secciones en la interfaz
+        async function setSec(s) {
+            document.getElementById('sec-v').classList.toggle('hidden', s !== 'venta');
+            document.getElementById('sec-h').classList.toggle('hidden', s !== 'hist');
+            document.getElementById('sec-f').classList.toggle('hidden', s !== 'fact');
+            
+            if(s === 'hist') {
+                const res = await fetch('api.php?action=get_ventas'); const v = await res.json();
+                document.getElementById('t-hist').innerHTML = v.map(x => `<tr onclick="verDet(${x.id},'${x.created_at}',${x.total},'${x.estatus}')" class="cursor-pointer hover:bg-slate-50 transition-colors ${x.estatus === 'CANCELADA' ? 'opacity-40 line-through bg-red-50' : ''}"><td class="p-6 font-black text-slate-400">#${String(x.id).padStart(5,'0')}</td><td class="p-6 font-bold text-slate-600">${x.created_at}</td><td class="p-6"><span class="px-3 py-1 rounded-full text-[9px] font-black uppercase ${x.estatus === 'CANCELADA' ? 'text-red-600 bg-red-100' : 'text-green-600 bg-green-100'}">${x.estatus}</span></td><td class="p-6 text-right font-black">$${parseFloat(x.total).toFixed(2)}</td></tr>`).join('');
+            }
+            if(s === 'fact') {
+                const res = await fetch('api.php?action=get_facturas'); const f = await res.json();
+                document.getElementById('t-fact').innerHTML = f.map(x => `<tr class="hover:bg-blue-50"><td class="p-6 font-black text-blue-600">${x.rfc}</td><td class="p-6 font-bold uppercase">${x.razon_social}</td><td class="p-6 font-black text-slate-300">#${x.id_venta}</td><td class="p-6 text-slate-400">${x.created_at}</td><td class="p-6 text-right font-black">$${parseFloat(x.monto_venta).toFixed(2)}</td></tr>`).join('');
+            }
+        }
+
+        // Actualiza los números del Dashboard superior
+        async function refreshStats() {
+            const res = await fetch('api.php?action=metricas'); const m = await res.json();
+            document.getElementById('st-v').innerText = "$" + parseFloat(m.ventas_hoy).toFixed(2);
+            document.getElementById('st-p').innerText = m.total_productos;
+            document.getElementById('st-a').innerText = m.alertas_stock;
+        }
+
+        // Filtra por categoría y actualiza la cuadrícula
+        function setCat(c) { cAct = c; renderCats(); renderGrid(); }
+    </script>
+</body>
+</html>
