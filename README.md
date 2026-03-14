@@ -30,4 +30,4 @@ The main objective of this project is to verify the stability of critical busine
    npx playwright install
 
 3. **Execution:**
-   npx playwright test
+   npx playwright test.
